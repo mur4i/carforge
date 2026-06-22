@@ -1,0 +1,28 @@
+<UserControl x:Class="CarForge.App.Views.ImportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Foreground="{StaticResource Text}">
+    <Border Background="{StaticResource Surface}" CornerRadius="8" Padding="16">
+        <StackPanel>
+            <TextBlock Text="Importar carro (monta resource + manifest)" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+            <TextBlock Text="Pasta de origem (arquivos soltos do carro)" Foreground="{StaticResource TextDim}" />
+            <DockPanel Margin="0,2,0,10">
+                <Button DockPanel.Dock="Right" Content="Origem…" Width="90" Margin="8,0,0,0" Command="{Binding BrowseSourceCommand}" />
+                <TextBox Text="{Binding SourcePath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
+            </DockPanel>
+
+            <TextBlock Text="Pasta de destino (onde criar o resource)" Foreground="{StaticResource TextDim}" />
+            <DockPanel Margin="0,2,0,10">
+                <Button DockPanel.Dock="Right" Content="Destino…" Width="90" Margin="8,0,0,0" Command="{Binding BrowseDestCommand}" />
+                <TextBox Text="{Binding DestPath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
+            </DockPanel>
+
+            <TextBlock Text="Nome do resource" Foreground="{StaticResource TextDim}" />
+            <TextBox Text="{Binding ResourceName, UpdateSourceTrigger=PropertyChanged}" Width="280" HorizontalAlignment="Left" Margin="0,2,0,12" VerticalContentAlignment="Center" />
+
+            <Button Content="Importar" Width="120" HorizontalAlignment="Left" Command="{Binding ImportCommand}" />
+            <TextBlock Text="{Binding Status}" Foreground="{StaticResource TextDim}" Margin="0,12,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+    </Border>
+</UserControl>

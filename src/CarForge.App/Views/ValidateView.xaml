@@ -1,0 +1,33 @@
+<UserControl x:Class="CarForge.App.Views.ValidateView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Foreground="{StaticResource Text}">
+    <Border Background="{StaticResource Surface}" CornerRadius="8" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock Text="Validar metas (problemas no pack)" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Content="Validar" Width="110" Command="{Binding RunCommand}" HorizontalAlignment="Right" />
+            </DockPanel>
+
+            <Border Grid.Row="1" Background="{StaticResource Bg}" CornerRadius="6" Padding="6">
+                <DataGrid ItemsSource="{Binding Issues}" AutoGenerateColumns="False" IsReadOnly="True"
+                          Background="Transparent" Foreground="{StaticResource Text}" GridLinesVisibility="None"
+                          HeadersVisibility="Column" RowBackground="Transparent" BorderThickness="0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Gravidade" Binding="{Binding Severity}" Width="90" />
+                        <DataGridTextColumn Header="Tipo" Binding="{Binding Kind}" Width="150" />
+                        <DataGridTextColumn Header="Detalhe" Binding="{Binding Detail}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <TextBlock Grid.Row="2" Text="{Binding Status}" Foreground="{StaticResource TextDim}" Margin="0,10,0,0" />
+        </Grid>
+    </Border>
+</UserControl>

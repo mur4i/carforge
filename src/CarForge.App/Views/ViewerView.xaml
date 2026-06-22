@@ -1,0 +1,15 @@
+<UserControl x:Class="CarForge.App.Views.ViewerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Foreground="{StaticResource Text}">
+    <Border Background="{StaticResource Surface}" CornerRadius="8" Padding="20">
+        <StackPanel MaxWidth="640" HorizontalAlignment="Left">
+            <TextBlock Text="Viewer 3D" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextDim}" Margin="0,0,0,12"
+                       Text="Fase A pronta: o viewport 3D (HelixToolkit) já roda na aba Faxina/dedup, mostrando A e B lado a lado. Por enquanto renderiza o modelo placeholder (uma caixa) — prova de que o pipeline 3D está vivo. Gire/zoom com o mouse." />
+            <TextBlock Text="Fase B — carro real (próximo passo):" FontWeight="SemiBold" Margin="0,0,0,6" />
+            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextDim}"
+                       Text="Implementar CodeWalkerModelLoader : IVehicleModelLoader usando CodeWalker.Core (YftFile → Drawable → vértices/índices) e trocar o loader em Viewer3DControl.Loader. Passo a passo em VIEWER.md. Os mesmos quadros do dedup passam a mostrar o carro real, sem mexer na UI." />
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -1,0 +1,11 @@
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\bin\Debug\net8.0\CarForge.Core.deps.json
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\bin\Debug\net8.0\CarForge.Core.dll
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\bin\Debug\net8.0\CarForge.Core.pdb
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\obj\Debug\net8.0\CarForge.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\obj\Debug\net8.0\CarForge.Core.AssemblyInfoInputs.cache
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\obj\Debug\net8.0\CarForge.Core.AssemblyInfo.cs
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\obj\Debug\net8.0\CarForge.Core.csproj.CoreCompileInputs.cache
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\obj\Debug\net8.0\CarForge.Core.dll
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\obj\Debug\net8.0\refint\CarForge.Core.dll
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\obj\Debug\net8.0\CarForge.Core.pdb
+C:\Users\Rodrigo\Desktop\CarForge\src\CarForge.Core\obj\Debug\net8.0\ref\CarForge.Core.dll

@@ -1,0 +1,47 @@
+<UserControl x:Class="CarForge.App.Views.Viewer3DControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:h="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Height="520" Background="{StaticResource Bg}" CornerRadius="6" ClipToBounds="True">
+            <h:HelixViewport3D x:Name="Viewport" ShowViewCube="False" ShowCoordinateSystem="False"
+                               Background="Transparent" ZoomExtentsWhenLoaded="True">
+                <h:DefaultLights />
+            </h:HelixViewport3D>
+        </Border>
+
+        <StackPanel Grid.Row="1" Margin="0,4,0,0">
+            <CheckBox x:Name="MasterTex" Content="Texturas" IsChecked="True"
+                      Foreground="{StaticResource Text}" Checked="OnMasterChanged" Unchecked="OnMasterChanged" />
+            <ItemsControl x:Name="TexList" Margin="0,4,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,0,0,8">
+                            <CheckBox Content="{Binding Source}" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                      FontWeight="SemiBold" Foreground="{StaticResource Text}"
+                                      Checked="OnGroupToggled" Unchecked="OnGroupToggled" />
+                            <ItemsControl ItemsSource="{Binding Items}" Margin="16,2,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Vertical" ItemHeight="20" ItemWidth="150" MaxHeight="200" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                  Foreground="{StaticResource TextDim}" FontSize="11" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Grid>
+</UserControl>

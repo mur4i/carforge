@@ -1,0 +1,42 @@
+<UserControl x:Class="CarForge.App.Views.SplitView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Foreground="{StaticResource Text}">
+    <Border Background="{StaticResource Surface}" CornerRadius="8" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Separar monolito → 1 resource por unidade" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+            <DockPanel Grid.Row="1" Margin="0,0,0,10">
+                <Button DockPanel.Dock="Right" Content="Saída…" Width="90" Margin="8,0,0,0" Command="{Binding BrowseOutCommand}" />
+                <TextBox Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
+            </DockPanel>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
+                <CheckBox IsChecked="{Binding CopyStream}" Content="Copiar arquivos de stream (.yft/.ytd)" Foreground="{StaticResource Text}" VerticalAlignment="Center" />
+                <Button Content="Separar" Width="110" Margin="16,0,0,0" Command="{Binding SplitCommand}" />
+            </StackPanel>
+
+            <Border Grid.Row="3" Background="{StaticResource Bg}" CornerRadius="6" Padding="6">
+                <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False" IsReadOnly="True"
+                          Background="Transparent" Foreground="{StaticResource Text}" GridLinesVisibility="None"
+                          HeadersVisibility="Column" RowBackground="Transparent" BorderThickness="0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Resource" Binding="{Binding ResourceName}" Width="*" />
+                        <DataGridTextColumn Header="Modelos" Binding="{Binding ModelCount}" Width="90" />
+                        <DataGridTextColumn Header="Arquivos" Binding="{Binding FileCount}" Width="90" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <TextBlock Grid.Row="4" Text="{Binding Status}" Foreground="{StaticResource TextDim}" Margin="0,10,0,0" />
+        </Grid>
+    </Border>
+</UserControl>
