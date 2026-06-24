@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CarForge.Core\CarForge.Core.csproj" />
+    <ProjectReference Include="..\..\third_party\CodeWalker.Core\CodeWalker.Core.csproj" />
   </ItemGroup>
 
 </Project>
