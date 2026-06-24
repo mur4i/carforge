@@ -49,3 +49,7 @@ Desktop.ini
 
 # CodeWalker (referência externa, fica fora do repo — ver VIEWER.md)
 /CodeWalker/
+
+# Saída de publish / pacotes de release (gerados localmente e pelo CI)
+publish/
+*.zip
