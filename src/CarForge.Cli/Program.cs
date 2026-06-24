@@ -1,7 +1,14 @@
+using BCnEncoder.Encoder;
+using BCnEncoder.Shared;
 using CarForge.Core.Analysis;
 using CarForge.Core.Generation;
 using CarForge.Core.Scanning;
 using CodeWalker.GameFiles;
+using CodeWalker.Utils;
+using Microsoft.Toolkit.HighPerformance;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 // CarForge CLI — roda o motor sem precisar da GUI.
 // Uso:
@@ -25,6 +32,7 @@ try
         case "manifest": return Manifest(target, HasFlag(args, "--overwrite"));
         case "split": return Split(target, GetOption(args, "--out"), !HasFlag(args, "--no-stream"));
         case "textures": return Textures(target);
+        case "bake-livery": return BakeLivery(args);
         default:
             Console.Error.WriteLine($"Comando desconhecido: {command}");
             PrintUsage();
@@ -144,6 +152,81 @@ static int Textures(string path)
     return 0;
 }
 
+static int BakeLivery(string[] args)
+{
+    // bake-livery <carro.ytd> <design.png> <nomeTextura> [--out <saida.ytd>]
+    if (args.Length < 4)
+    {
+        Console.Error.WriteLine("Uso: bake-livery <carro.ytd> <design.png> <nomeTextura> [--out <saida.ytd>]");
+        return 1;
+    }
+    var ytdPath = args[1];
+    var pngPath = args[2];
+    var texName = args[3].ToLowerInvariant();
+    var outPath = GetOption(args, "--out")
+        ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(ytdPath))!,
+                        Path.GetFileNameWithoutExtension(ytdPath) + "_baked.ytd");
+
+    if (!File.Exists(ytdPath)) { Console.Error.WriteLine($"YTD não encontrado: {ytdPath}"); return 1; }
+    if (!File.Exists(pngPath)) { Console.Error.WriteLine($"PNG não encontrado: {pngPath}"); return 1; }
+
+    // 1) PNG -> pixels (quadrado, potência de 2)
+    using var image = Image.Load<Rgba32>(pngPath);
+    int size = Math.Clamp(NearestPow2(Math.Max(image.Width, image.Height)), 64, 2048);
+    if (image.Width != size || image.Height != size)
+        image.Mutate(x => x.Resize(size, size));
+    int w = image.Width, h = image.Height;
+    var pixels = new ColorRgba32[h, w];
+    image.ProcessPixelRows(accessor =>
+    {
+        for (int y = 0; y < h; y++)
+        {
+            var rowSpan = accessor.GetRowSpan(y);
+            for (int x = 0; x < w; x++)
+            {
+                var p = rowSpan[x];
+                pixels[y, x] = new ColorRgba32(p.R, p.G, p.B, p.A);
+            }
+        }
+    });
+
+    // 2) pixels -> DDS (BC3 / DXT5, com mips)
+    var encoder = new BcEncoder();
+    encoder.OutputOptions.GenerateMipMaps = true;
+    encoder.OutputOptions.Quality = CompressionQuality.Balanced;
+    encoder.OutputOptions.Format = CompressionFormat.Bc3;
+    encoder.OutputOptions.FileFormat = OutputFileFormat.Dds;
+    using var ms = new MemoryStream();
+    encoder.EncodeToStream(pixels.AsMemory2D(), ms);
+    var ddsBytes = ms.ToArray();
+
+    // 3) DDS -> Texture do CodeWalker
+    var newTex = DDSIO.GetTexture(ddsBytes);
+    newTex.Name = texName;
+    newTex.NameHash = JenkHash.GenHash(texName);
+
+    // 4) carrega o YTD, troca/insere a textura, reconstrói e salva
+    var ytd = new YtdFile();
+    ytd.Load(File.ReadAllBytes(ytdPath));
+    var dict = ytd.TextureDict;
+    if (dict?.Textures?.data_items is null) { Console.Error.WriteLine("YTD sem dicionário de texturas."); return 1; }
+
+    var list = dict.Textures.data_items.Where(t => t is not null).ToList();
+    int idx = list.FindIndex(t => string.Equals(t.Name, texName, StringComparison.OrdinalIgnoreCase));
+    string verb;
+    if (idx >= 0) { list[idx] = newTex; verb = "substituída"; }
+    else { list.Add(newTex); verb = "adicionada"; }
+    dict.BuildFromTextureList(list);
+
+    File.WriteAllBytes(outPath, ytd.Save());
+    Console.WriteLine($"[ok] textura '{texName}' {verb} ({size}x{size}, BC3).");
+    Console.WriteLine($"[ok] YTD salvo: {outPath}");
+    Console.WriteLine("Ponha em stream/ do resource do carro (no lugar do .ytd original) e ensure no server.");
+    return 0;
+}
+
+static int NearestPow2(int v) { int p = 1; while (p < v) p <<= 1; return p; }
+
 static string? GetOption(string[] args, string name)
 {
     var i = Array.IndexOf(args, name);
@@ -169,5 +252,9 @@ static void PrintUsage()
           carforge textures <arquivo.ytd|.yft>
               Lista os nomes de textura do arquivo (via CodeWalker.Core).
               Use pra achar o txn certo de plotagem de um veículo.
+
+          carforge bake-livery <carro.ytd> <design.png> <nomeTextura> [--out <saida.ytd>]
+              Assa um PNG na textura <nomeTextura> do .ytd (BC3) e salva um .ytd
+              novo — plotagem PERMANENTE. Ache o nome com 'textures'.
         """);
 }
