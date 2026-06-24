@@ -125,6 +125,11 @@ public sealed class DedupViewModel : ObservableObject
     private string _keepLabel = "Manter A, remover duplicados";
     public string KeepLabel { get => _keepLabel; private set => Set(ref _keepLabel, value); }
 
+    /// <summary>Quando marcado, a remoção é aplicada direto, sem os diálogos de
+    /// confirmação/sucesso. Fica memorizado durante a sessão.</summary>
+    private bool _skipConfirm;
+    public bool SkipConfirm { get => _skipConfirm; set => Set(ref _skipConfirm, value); }
+
     private static bool Eq(string? a, string? b) =>
         string.Equals(a ?? "", b ?? "", StringComparison.OrdinalIgnoreCase);
 
@@ -259,20 +264,24 @@ public sealed class DedupViewModel : ObservableObject
             return;
         }
 
-        var keepDesc = OccurrenceA.SameFileGroup
-            ? $"o bloco #{OccurrenceA.BlockIndex + 1} de:\n{OccurrenceA.MetaPath}"
-            : $"a cópia em:\n{OccurrenceA.MetaPath}";
+        if (!SkipConfirm)
+        {
+            var keepDesc = OccurrenceA.SameFileGroup
+                ? $"o bloco #{OccurrenceA.BlockIndex + 1} de:\n{OccurrenceA.MetaPath}"
+                : $"a cópia em:\n{OccurrenceA.MetaPath}";
 
-        var confirm = MessageBox.Show(
-            $"Manter {keepDesc}\n\n" +
-            $"e REMOVER as outras declarações de '{plan.Model}' em {plan.Changes.Count} arquivo(s) .meta?\n\n" +
-            "Os arquivos de stream (.yft/.ytd) NÃO são apagados (são compartilhados).\n" +
-            "Faça backup antes. Continuar?",
-            "Remover duplicados", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-        if (confirm != MessageBoxResult.Yes) return;
+            var confirm = MessageBox.Show(
+                $"Manter {keepDesc}\n\n" +
+                $"e REMOVER as outras declarações de '{plan.Model}' em {plan.Changes.Count} arquivo(s) .meta?\n\n" +
+                "Os arquivos de stream (.yft/.ytd) NÃO são apagados (são compartilhados).\n" +
+                "Faça backup antes. Continuar?",
+                "Remover duplicados", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes) return;
+        }
 
         remover.Apply(_pack, plan);
-        MessageBox.Show($"Removido '{plan.Model}' de {plan.Changes.Count} arquivo(s). Mantida 1 cópia.", "CarForge");
+        if (!SkipConfirm)
+            MessageBox.Show($"Removido '{plan.Model}' de {plan.Changes.Count} arquivo(s). Mantida 1 cópia.", "CarForge");
         _rescan();
     }
 }
