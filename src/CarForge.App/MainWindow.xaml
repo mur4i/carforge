@@ -45,6 +45,9 @@
         </UniformGrid>
 
         <TabControl Grid.Row="3" Background="Transparent" BorderThickness="0">
+            <TabItem Header="Veículos">
+                <views:VehiclesView DataContext="{Binding Vehicles}" Margin="0,12,0,0" />
+            </TabItem>
             <TabItem Header="Faxina / dedup">
                 <views:DedupView DataContext="{Binding Dedup}" Margin="0,12,0,0" />
             </TabItem>

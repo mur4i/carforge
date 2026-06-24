@@ -11,6 +11,7 @@ namespace CarForge.App.ViewModels;
 /// <summary>VM raiz: escaneia o pack uma vez e alimenta os módulos (abas).</summary>
 public sealed class AppViewModel : ObservableObject
 {
+    public VehiclesViewModel Vehicles { get; }
     public DedupViewModel Dedup { get; }
     public SplitViewModel Split { get; }
     public HandlingViewModel Handling { get; }
@@ -23,6 +24,7 @@ public sealed class AppViewModel : ObservableObject
 
     public AppViewModel()
     {
+        Vehicles = new VehiclesViewModel();
         Dedup = new DedupViewModel(Rescan);
         Split = new SplitViewModel();
         Handling = new HandlingViewModel();
@@ -69,6 +71,7 @@ public sealed class AppViewModel : ObservableObject
             CollisionCount = analysis.FleetCollisions.Count;
             TuningCount = analysis.TuningCount;
 
+            Vehicles.Load(pack, analysis);
             Dedup.Load(pack, analysis);
             Split.Load(pack);
             Handling.Load(pack);
