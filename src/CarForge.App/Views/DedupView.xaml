@@ -5,40 +5,89 @@
              Foreground="{StaticResource Text}">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="210" />
+            <ColumnDefinition Width="230" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
+        <!-- LISTA DE DUPLICADOS -->
         <Border Grid.Column="0" Background="{StaticResource Surface}" CornerRadius="8" Padding="6" Margin="0,0,12,0">
             <ListBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}"
-                     Background="Transparent" BorderThickness="0" Foreground="{StaticResource Text}">
+                     Background="Transparent" BorderThickness="0" Foreground="{StaticResource Text}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Margin="4">
-                            <TextBlock Text="{Binding Model}" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding Badge}" Foreground="{StaticResource TextDim}" FontSize="11" />
-                        </StackPanel>
+                        <Grid Margin="2,3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="4" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- barra de status colorida -->
+                            <Border Grid.Column="0" Width="4" CornerRadius="2" Margin="0,1,8,1"
+                                    Background="{Binding Kind, Converter={StaticResource VerdictBrush}}" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Model}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Badge}" Foreground="{StaticResource TextDim}" FontSize="11"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Grid>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
         </Border>
 
+        <!-- PAINEL DE DECISÃO -->
         <Border Grid.Column="1" Background="{StaticResource Surface}" CornerRadius="8" Padding="16">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
-                <TextBlock Text="{Binding SelectedGroup.Model}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,4" />
+                <TextBlock Text="{Binding SelectedGroup.Model}" FontSize="20" FontWeight="Bold" Margin="0,0,0,2" />
                 <TextBlock Text="{Binding SelectedGroup.Badge}" Foreground="{StaticResource TextDim}" Margin="0,0,0,12" />
 
-                <Grid Margin="0,0,0,10">
+                <!-- ===== BANNER DE VEREDITO ===== -->
+                <Border CornerRadius="8" Padding="14,12" Margin="0,0,0,16" BorderThickness="1"
+                        Background="{Binding VerdictKind, Converter={StaticResource VerdictBrush}, ConverterParameter=bg}"
+                        BorderBrush="{Binding VerdictKind, Converter={StaticResource VerdictBrush}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17" Margin="0,0,12,0"
+                                VerticalAlignment="Top"
+                                Background="{Binding VerdictKind, Converter={StaticResource VerdictBrush}}">
+                            <TextBlock Text="{Binding VerdictKind, Converter={StaticResource VerdictGlyph}}"
+                                       FontSize="18" FontWeight="Bold" Foreground="#15151A"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding VerdictTitle}" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{Binding VerdictKind, Converter={StaticResource VerdictBrush}}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding VerdictDetail}" Foreground="{StaticResource Text}"
+                                       TextWrapping="Wrap" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ===== SELETORES A / B ===== -->
+                <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <ComboBox Grid.Column="0" ItemsSource="{Binding SelectedGroup.Occurrences}"
-                              SelectedItem="{Binding OccurrenceA}" DisplayMemberPath="Display" />
-                    <ComboBox Grid.Column="2" ItemsSource="{Binding SelectedGroup.Occurrences}"
-                              SelectedItem="{Binding OccurrenceB}" DisplayMemberPath="Display" />
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="A — cópia que você MANTÉM" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Good}" Margin="2,0,0,3" />
+                        <ComboBox ItemsSource="{Binding SelectedGroup.Occurrences}"
+                                  SelectedItem="{Binding OccurrenceA}" DisplayMemberPath="Display" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="B — comparar com" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextDim}" Margin="2,0,0,3" />
+                        <ComboBox ItemsSource="{Binding SelectedGroup.Occurrences}"
+                                  SelectedItem="{Binding OccurrenceB}" DisplayMemberPath="Display" />
+                    </StackPanel>
                 </Grid>
 
+                <!-- ===== PREVIEWS 3D ===== -->
                 <Grid Margin="0,0,0,14">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" />
@@ -53,25 +102,71 @@
                     </StackPanel>
                 </Grid>
 
-                <ItemsControl ItemsSource="{Binding Diffs}" Margin="0,0,0,14">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Margin="0,3">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="90" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource TextDim}" />
-                                <TextBlock Grid.Column="1" Text="{Binding ValueA}" Foreground="{Binding IsDifferent, Converter={StaticResource DiffBrush}}" />
-                                <TextBlock Grid.Column="2" Text="{Binding ValueB}" Foreground="{Binding IsDifferent, Converter={StaticResource DiffBrush}}" />
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <!-- ===== TABELA DE DIFERENÇAS ===== -->
+                <Border Background="{StaticResource SurfaceAlt}" CornerRadius="8" Padding="12" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="Comparação campo a campo" FontWeight="SemiBold" Margin="0,0,0,2" />
+                        <TextBlock Text="Linhas em âmbar (≠) são o que difere entre A e B."
+                                   Foreground="{StaticResource TextDim}" FontSize="11" Margin="0,0,0,8" />
 
-                <StackPanel Orientation="Horizontal">
-                    <Button Content="Renomear spawn (em todo lugar)" Command="{Binding RenameCommand}" Margin="0,0,8,0" />
-                    <Button Content="Manter A, remover duplicados" Command="{Binding RemoveDuplicatesCommand}" />
-                </StackPanel>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="24" /><ColumnDefinition Width="150" />
+                                <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="campo" Foreground="{StaticResource TextDim}" FontSize="11" />
+                            <TextBlock Grid.Column="2" Text="A (manter)" Foreground="{StaticResource Good}" FontSize="11" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="3" Text="B" Foreground="{StaticResource TextDim}" FontSize="11" FontWeight="SemiBold" />
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding Diffs}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="4" Padding="0,3" Margin="0,1"
+                                            Background="{Binding IsDifferent, Converter={StaticResource DiffRowBg}}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="24" /><ColumnDefinition Width="150" />
+                                                <ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding IsDifferent, Converter={StaticResource DiffMarker}}"
+                                                       Foreground="{StaticResource Warn}" FontWeight="Bold"
+                                                       HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Label}" Foreground="{StaticResource TextDim}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="2" Text="{Binding ValueA}" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{Binding IsDifferent, Converter={StaticResource DiffBrush}}" />
+                                            <TextBlock Grid.Column="3" Text="{Binding ValueB}" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{Binding IsDifferent, Converter={StaticResource DiffBrush}}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- ===== CARD DE RECOMENDAÇÃO + AÇÕES ===== -->
+                <Border Background="{StaticResource SurfaceAlt}" CornerRadius="8" Padding="14"
+                        Visibility="{Binding Recommendation, Converter={StaticResource StrToVis}}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="💡" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Top" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="O que fazer" FontWeight="SemiBold" Margin="0,0,0,2" />
+                                <TextBlock Text="{Binding Recommendation}" Foreground="{StaticResource Text}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="{Binding KeepLabel}" Command="{Binding RemoveDuplicatesCommand}"
+                                    Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" />
+                            <Button Content="Renomear spawn (em todo lugar)" Command="{Binding RenameCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
             </ScrollViewer>
         </Border>

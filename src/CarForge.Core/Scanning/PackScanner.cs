@@ -39,15 +39,26 @@ public sealed class PackScanner
             }
         }
 
-        // modelos + ocorrências
+        // modelos + ocorrências (cada bloco <Item> preservado individualmente)
         foreach (var meta in vehicleMetas)
         {
             var rel = Path.GetRelativePath(root, meta);
-            foreach (var rec in MetaParsers.ParseVehicles(meta))
+            foreach (var rec in MetaParsers.ParseOccurrences(meta))
             {
                 if (!pack.ModelOccurrences.TryGetValue(rec.Model, out var occ))
                     pack.ModelOccurrences[rec.Model] = occ = new List<string>();
                 occ.Add(rel);
+
+                if (!pack.Occurrences.TryGetValue(rec.Model, out var list))
+                    pack.Occurrences[rec.Model] = list = new List<VehicleOccurrence>();
+                list.Add(new VehicleOccurrence
+                {
+                    Model = rec.Model,
+                    MetaRelPath = rel,
+                    BlockIndex = rec.BlockIndex,
+                    Fields = rec.Fields,
+                    ContentHash = rec.ContentHash,
+                });
 
                 if (!pack.Models.ContainsKey(rec.Model))
                 {
@@ -55,9 +66,9 @@ public sealed class PackScanner
                     {
                         Model = rec.Model,
                         MetaPath = meta,
-                        HandlingId = rec.HandlingId,
-                        AudioHash = rec.AudioHash,
-                        Txd = rec.Txd,
+                        HandlingId = rec.Fields.GetValueOrDefault("handlingid"),
+                        AudioHash = rec.Fields.GetValueOrDefault("audionamehash"),
+                        Txd = rec.Fields.GetValueOrDefault("parent"),
                     };
                 }
             }

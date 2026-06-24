@@ -12,6 +12,10 @@ public sealed class VehiclePack
     /// Chave = model (minúsculo), valor = lista de caminhos relativos de vehicles.meta.</summary>
     public Dictionary<string, List<string>> ModelOccurrences { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Cada DECLARAÇÃO (bloco &lt;Item&gt;) por modelo, com campos e hash —
+    /// base pra comparar duplicados e mostrar o que de fato difere entre eles.</summary>
+    public Dictionary<string, List<VehicleOccurrence>> Occurrences { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Arquivos de stream indexados por nome-base minúsculo (sem extensão).</summary>
     public Dictionary<string, List<string>> StreamFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
 

@@ -36,23 +36,30 @@ public sealed class DedupViewModel : ObservableObject
         Groups.Clear();
         foreach (var g in analysis.InternalDuplicates)
         {
-            var occ = new ObservableCollection<OccurrenceVm>(
-                pack.ModelOccurrences[g.Model].Select(rel => BuildOcc(pack, g.Model, rel)));
+            var occs = pack.Occurrences.TryGetValue(g.Model, out var list)
+                ? list
+                : new List<VehicleOccurrence>();
+            bool sameFile = occs.Count > 1 &&
+                            occs.Select(o => o.MetaRelPath).Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1;
+
+            var occVms = new ObservableCollection<OccurrenceVm>(
+                occs.Select(o => BuildOcc(pack, o, sameFile)));
+
             Groups.Add(new DuplicateGroupVm
             {
                 Model = g.Model,
-                Occurrences = occ,
+                Occurrences = occVms,
                 Collides = collisionSet.Contains(g.Model),
+                SameFile = sameFile,
             });
         }
         SelectedGroup = Groups.FirstOrDefault();
     }
 
-    private static OccurrenceVm BuildOcc(VehiclePack pack, string model, string relMeta)
+    private static OccurrenceVm BuildOcc(VehiclePack pack, VehicleOccurrence o, bool sameFileGroup)
     {
-        var v = pack.Models.TryGetValue(model, out var m) ? m : null;
         double sizeKb = 0; string? yft = null; string? yftAbs = null;
-        if (pack.StreamFiles.TryGetValue(model, out var files))
+        if (pack.StreamFiles.TryGetValue(o.Model, out var files))
         {
             var best = files.Where(f => f.EndsWith(".yft", StringComparison.OrdinalIgnoreCase))
                             .OrderByDescending(f => new FileInfo(f).Length).FirstOrDefault();
@@ -63,15 +70,23 @@ public sealed class DedupViewModel : ObservableObject
                 yftAbs = best;
             }
         }
+        bool tuning = pack.Models.TryGetValue(o.Model, out var m) && m.HasTuning;
+
         return new OccurrenceVm
         {
-            MetaPath = relMeta,
-            Handling = v?.HandlingId,
-            Audio = v?.AudioHash,
+            MetaPath = o.MetaRelPath,
+            BlockIndex = o.BlockIndex,
+            SameFileGroup = sameFileGroup,
+            Handling = o.Handling,
+            Audio = o.Audio,
+            Txd = o.Txd,
+            VehicleClass = o.VehicleClass,
             Yft = yft,
             YftAbsolute = yftAbs,
             SizeKB = sizeKb,
-            Tuning = v?.HasTuning ?? false,
+            Tuning = tuning,
+            ContentHash = o.ContentHash,
+            Fields = o.Fields,
         };
     }
 
@@ -93,22 +108,113 @@ public sealed class DedupViewModel : ObservableObject
     private OccurrenceVm? _occB;
     public OccurrenceVm? OccurrenceB { get => _occB; set { if (Set(ref _occB, value)) RebuildDiff(); } }
 
+    // ---- veredito (banner) e recomendação ----
+    private string _verdictKind = "none";
+    public string VerdictKind { get => _verdictKind; private set => Set(ref _verdictKind, value); }
+
+    private string _verdictTitle = "";
+    public string VerdictTitle { get => _verdictTitle; private set => Set(ref _verdictTitle, value); }
+
+    private string _verdictDetail = "";
+    public string VerdictDetail { get => _verdictDetail; private set => Set(ref _verdictDetail, value); }
+
+    private string _recommendation = "";
+    public string Recommendation { get => _recommendation; private set => Set(ref _recommendation, value); }
+
+    // rótulos dos botões dependem do contexto (mesmo arquivo vs vários)
+    private string _keepLabel = "Manter A, remover duplicados";
+    public string KeepLabel { get => _keepLabel; private set => Set(ref _keepLabel, value); }
+
+    private static bool Eq(string? a, string? b) =>
+        string.Equals(a ?? "", b ?? "", StringComparison.OrdinalIgnoreCase);
+
+    private static string? Name(string? path) => path is null ? null : Path.GetFileName(path);
+
     private void RebuildDiff()
     {
         Diffs.Clear();
-        if (OccurrenceA is null || OccurrenceB is null) return;
-        void Row(string label, string? a, string? b) => Diffs.Add(new DiffRowVm
+        var a = OccurrenceA; var b = OccurrenceB;
+        if (a is null || b is null)
         {
-            Label = label, ValueA = a ?? "—", ValueB = b ?? "—",
-            IsDifferent = !string.Equals(a ?? "", b ?? "", StringComparison.OrdinalIgnoreCase),
-        });
+            SetVerdict("none", "Selecione duas cópias", "Escolha A e B acima para comparar.");
+            return;
+        }
 
-        Row("handling", OccurrenceA.Handling, OccurrenceB.Handling);
-        Row("áudio", OccurrenceA.Audio, OccurrenceB.Audio);
-        Row(".yft", Path.GetFileName(OccurrenceA.Yft), Path.GetFileName(OccurrenceB.Yft));
-        Row("tamanho", OccurrenceA.SizeKB > 0 ? $"{OccurrenceA.SizeKB:N0} KB" : null,
-                       OccurrenceB.SizeKB > 0 ? $"{OccurrenceB.SizeKB:N0} KB" : null);
-        Row("tuning", OccurrenceA.Tuning ? "sim" : "não", OccurrenceB.Tuning ? "sim" : "não");
+        bool sameOccurrence = ReferenceEquals(a, b);
+
+        void Row(string label, string? av, string? bv)
+        {
+            Diffs.Add(new DiffRowVm
+            {
+                Label = label,
+                ValueA = string.IsNullOrEmpty(av) ? "—" : av,
+                ValueB = string.IsNullOrEmpty(bv) ? "—" : bv,
+                IsDifferent = !sameOccurrence && !Eq(av, bv),
+            });
+        }
+
+        // linhas curadas (o que um admin precisa ver sempre)
+        Row("local", a.SameFileGroup ? $"bloco #{a.BlockIndex + 1}" : a.MetaPath,
+                     b.SameFileGroup ? $"bloco #{b.BlockIndex + 1}" : b.MetaPath);
+        Row("handling", a.Handling, b.Handling);
+        Row("áudio (som do motor)", a.Audio, b.Audio);
+        Row("txd (textura)", a.Txd, b.Txd);
+        Row("classe", a.VehicleClass, b.VehicleClass);
+        Row("modelo 3D (.yft)", Name(a.Yft), Name(b.Yft));
+        Row("tamanho do .yft", a.SizeKB > 0 ? $"{a.SizeKB:N0} KB" : null, b.SizeKB > 0 ? $"{b.SizeKB:N0} KB" : null);
+        Row("tuning", a.Tuning ? "sim" : "não", b.Tuning ? "sim" : "não");
+
+        // qualquer OUTRO campo que difira e ainda não esteja coberto acima
+        var covered = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { "handlingid", "audionamehash", "parent", "vehicleclass", "modelname" };
+        var keys = a.Fields.Keys.Union(b.Fields.Keys, StringComparer.OrdinalIgnoreCase)
+                    .Where(k => !covered.Contains(k))
+                    .OrderBy(k => k, StringComparer.OrdinalIgnoreCase);
+        foreach (var k in keys)
+        {
+            var av = a.Fields.GetValueOrDefault(k);
+            var bv = b.Fields.GetValueOrDefault(k);
+            if (!sameOccurrence && !Eq(av, bv)) Row(k, av, bv);
+        }
+
+        // veredito
+        var diffLabels = Diffs.Where(d => d.IsDifferent).Select(d => d.Label).ToList();
+        bool sharesModel = Eq(Name(a.Yft), Name(b.Yft));
+
+        if (sameOccurrence)
+        {
+            SetVerdict("none", "É a mesma cópia dos dois lados",
+                "Selecione uma cópia diferente em B para ver o que muda.");
+            Recommendation = "";
+        }
+        else if (diffLabels.Count == 0 && string.Equals(a.ContentHash, b.ContentHash, StringComparison.Ordinal))
+        {
+            SetVerdict("ok", "Cópias idênticas — pode remover com segurança",
+                "As duas declarações são iguais em tudo. Manter as duas só desperdiça espaço e pode gerar warning no load.");
+            Recommendation = "Recomendado: manter 1 e remover a(s) outra(s). " +
+                "Só os arquivos .meta são editados — o modelo 3D (.yft/.ytd) NÃO é apagado.";
+        }
+        else
+        {
+            var what = string.Join(", ", diffLabels);
+            bool onlyAudio = diffLabels.Count == 1 &&
+                             diffLabels[0].StartsWith("áudio", StringComparison.OrdinalIgnoreCase);
+            SetVerdict("warn", "São o mesmo carro, mas com diferenças",
+                $"Diferem em: {what}." + (sharesModel ? " O modelo 3D é o mesmo nas duas." : ""));
+            Recommendation = onlyAudio
+                ? "É o mesmo carro com som de motor diferente. Em A, escolha o som que você quer manter e remova a outra cópia. O .yft/.ytd não é tocado."
+                : "Confira as diferenças acima. Em A, deixe a versão que você quer manter e remova as outras. O .yft/.ytd não é tocado.";
+        }
+
+        // rótulo do botão de manter
+        KeepLabel = a.SameFileGroup
+            ? $"Manter bloco #{a.BlockIndex + 1}, remover o resto"
+            : "Manter A, remover as outras cópias";
+    }
+
+    private void SetVerdict(string kind, string title, string detail)
+    {
+        VerdictKind = kind; VerdictTitle = title; VerdictDetail = detail;
     }
 
     private void Rename()
@@ -144,7 +250,7 @@ public sealed class DedupViewModel : ObservableObject
         if (_pack is null || SelectedGroup is null || OccurrenceA is null) return;
 
         var remover = new DuplicateRemover();
-        var plan = remover.Plan(_pack, SelectedGroup.Model, OccurrenceA.MetaPath);
+        var plan = remover.PlanKeeping(_pack, SelectedGroup.Model, OccurrenceA.MetaPath, OccurrenceA.BlockIndex);
 
         if (!plan.IsSafe)
         {
@@ -153,9 +259,13 @@ public sealed class DedupViewModel : ObservableObject
             return;
         }
 
+        var keepDesc = OccurrenceA.SameFileGroup
+            ? $"o bloco #{OccurrenceA.BlockIndex + 1} de:\n{OccurrenceA.MetaPath}"
+            : $"a cópia em:\n{OccurrenceA.MetaPath}";
+
         var confirm = MessageBox.Show(
-            $"Manter a ocorrência em:\n{OccurrenceA.MetaPath}\n\n" +
-            $"e REMOVER '{plan.Model}' de {plan.Changes.Count} outro(s) arquivo(s) .meta?\n\n" +
+            $"Manter {keepDesc}\n\n" +
+            $"e REMOVER as outras declarações de '{plan.Model}' em {plan.Changes.Count} arquivo(s) .meta?\n\n" +
             "Os arquivos de stream (.yft/.ytd) NÃO são apagados (são compartilhados).\n" +
             "Faça backup antes. Continuar?",
             "Remover duplicados", MessageBoxButton.YesNo, MessageBoxImage.Warning);

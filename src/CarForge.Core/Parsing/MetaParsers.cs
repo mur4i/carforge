@@ -53,6 +53,109 @@ public static partial class MetaParsers
         }
     }
 
+    /// <summary>Campo escalar do tipo &lt;tag&gt;valor&lt;/tag&gt;.</summary>
+    private static readonly Regex LeafPairRx =
+        new(@"<([A-Za-z_][\w]*)>([^<]*)</\1>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>Campo do tipo &lt;tag value="x" /&gt; (ou com atributo value).</summary>
+    private static readonly Regex ValueAttrRx =
+        new(@"<([A-Za-z_][\w]*)\s+value=""([^""]*)""\s*/?>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>Uma declaração concreta (bloco) de um veículo num vehicles.meta.</summary>
+    public readonly record struct VehicleOccurrenceRecord(
+        string Model, int BlockIndex, IReadOnlyDictionary<string, string> Fields, string ContentHash);
+
+    /// <summary>
+    /// Extrai cada DECLARAÇÃO de veículo como um bloco &lt;Item&gt; completo (com
+    /// varredura de profundidade, robusta a &lt;Item&gt; aninhado), com seus campos
+    /// escalares e um hash do conteúdo. <see cref="VehicleOccurrenceRecord.BlockIndex"/>
+    /// é o índice da ocorrência DESTE modelo dentro do arquivo (0, 1, …).
+    /// </summary>
+    public static IEnumerable<VehicleOccurrenceRecord> ParseOccurrences(string metaPath)
+    {
+        var text = MetaText.Read(metaPath);
+        var perModel = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (model, block) in EnumerateCarBlocks(text))
+        {
+            int idx = perModel.TryGetValue(model, out var c) ? c : 0;
+            perModel[model] = idx + 1;
+            yield return new VehicleOccurrenceRecord(model, idx, ExtractFields(block), HashBlock(block));
+        }
+    }
+
+    private static IEnumerable<(string Model, string Block)> EnumerateCarBlocks(string text)
+    {
+        foreach (Match m in ModelRx().Matches(text))
+        {
+            var model = m.Groups[1].Value.Trim().ToLowerInvariant();
+            if (model.Length == 0) continue;
+            // o <Item> do carro é o de abertura mais próximo ANTES do modelName
+            int open = text.LastIndexOf("<Item", m.Index, StringComparison.OrdinalIgnoreCase);
+            if (open < 0) continue;
+            int end = FindItemClose(text, open);
+            if (end < 0) continue;
+            yield return (model, text.Substring(open, end - open));
+        }
+    }
+
+    private static int FindItemClose(string text, int open)
+    {
+        int depth = 0, i = open;
+        while (i < text.Length)
+        {
+            int lt = text.IndexOf('<', i);
+            if (lt < 0) break;
+            if (TokenAt(text, lt, "</Item"))
+            {
+                depth--;
+                int gt = text.IndexOf('>', lt);
+                if (gt < 0) break;
+                if (depth == 0) return gt + 1;
+                i = gt + 1;
+            }
+            else if (TokenAt(text, lt, "<Item"))
+            {
+                int gt = text.IndexOf('>', lt);
+                if (gt < 0) break;
+                if (!(gt > 0 && text[gt - 1] == '/')) depth++;
+                i = gt + 1;
+            }
+            else i = lt + 1;
+        }
+        return -1;
+    }
+
+    private static bool TokenAt(string text, int pos, string token) =>
+        pos + token.Length <= text.Length &&
+        text.AsSpan(pos, token.Length).Equals(token, StringComparison.OrdinalIgnoreCase);
+
+    private static IReadOnlyDictionary<string, string> ExtractFields(string block)
+    {
+        var d = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (Match m in LeafPairRx.Matches(block))
+        {
+            var k = m.Groups[1].Value.ToLowerInvariant();
+            if (k is "item" || d.ContainsKey(k)) continue;
+            d[k] = m.Groups[2].Value.Trim();
+        }
+        foreach (Match m in ValueAttrRx.Matches(block))
+        {
+            var k = m.Groups[1].Value.ToLowerInvariant();
+            if (k is "item" || d.ContainsKey(k)) continue;
+            d[k] = m.Groups[2].Value.Trim();
+        }
+        return d;
+    }
+
+    /// <summary>FNV-1a 64-bit do bloco com espaços colapsados.</summary>
+    private static string HashBlock(string block)
+    {
+        var norm = Regex.Replace(block, @"\s+", " ").Trim();
+        ulong h = 1469598103934665603UL;
+        foreach (char ch in norm) { h ^= ch; h *= 1099511628211UL; }
+        return h.ToString("x16");
+    }
+
     /// <summary>
     /// Liga modelo -> kits de tuning a partir de carvariations.meta.
     /// Fatiamos por &lt;modelName&gt; (cada janela é um modelo) e procuramos o

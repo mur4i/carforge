@@ -4,7 +4,10 @@ using CarForge.Core.Models;
 
 namespace CarForge.Core.Editing;
 
-public sealed record RemovalChange(string MetaRelPath, string Kind);
+/// <param name="KeepBlockIndex">-1 = remove TODAS as declarações do modelo no
+/// arquivo; &gt;=0 = mantém só o bloco desse índice e remove as outras (duplicata
+/// dentro do MESMO arquivo).</param>
+public sealed record RemovalChange(string MetaRelPath, string Kind, int KeepBlockIndex = -1);
 
 public sealed class RemovalPlan
 {
@@ -59,6 +62,51 @@ public sealed class DuplicateRemover
         return plan;
     }
 
+    /// <summary>
+    /// Plano que mantém UMA declaração específica — o bloco <paramref name="keepBlockIndex"/>
+    /// no arquivo <paramref name="keepMetaRelPath"/> — e remove todas as outras, inclusive
+    /// duplicatas no MESMO arquivo. Use isto quando o mesmo modelo aparece 2× num
+    /// único vehicles.meta (o <see cref="Plan"/> simples não cobre esse caso).
+    /// </summary>
+    public RemovalPlan PlanKeeping(VehiclePack pack, string model, string keepMetaRelPath, int keepBlockIndex)
+    {
+        model = model.Trim().ToLowerInvariant();
+        var plan = new RemovalPlan { Model = model, KeepMetaRelPath = keepMetaRelPath };
+
+        if (!pack.ModelOccurrences.TryGetValue(model, out var occ))
+        {
+            plan.Warnings.Add($"Modelo '{model}' não encontrado.");
+            return plan;
+        }
+
+        foreach (var rel in occ.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var vm = Path.Combine(pack.RootPath, rel);
+            if (!File.Exists(vm)) continue;
+            int count = CountItems(MetaText.Read(vm), model);
+            if (count == 0) continue;
+
+            bool isKeeper = rel.Equals(keepMetaRelPath, StringComparison.OrdinalIgnoreCase);
+            if (isKeeper)
+            {
+                // mesmo arquivo do keeper: só mexe se houver duplicata interna
+                if (count > 1)
+                    plan.Changes.Add(new RemovalChange(rel, "vehicles.meta (mesmo arquivo)", keepBlockIndex));
+            }
+            else
+            {
+                plan.Changes.Add(new RemovalChange(rel, "vehicles.meta"));
+                var cv = Path.Combine(Path.GetDirectoryName(vm)!, "carvariations.meta");
+                if (File.Exists(cv) && CountItems(MetaText.Read(cv), model) > 0)
+                    plan.Changes.Add(new RemovalChange(Path.GetRelativePath(pack.RootPath, cv), "carvariations.meta"));
+            }
+        }
+
+        if (plan.Changes.Count == 0)
+            plan.Warnings.Add("Nada a remover (só há uma declaração).");
+        return plan;
+    }
+
     public void Apply(VehiclePack pack, RemovalPlan plan)
     {
         foreach (var ch in plan.Changes)
@@ -66,7 +114,9 @@ public sealed class DuplicateRemover
             var path = Path.Combine(pack.RootPath, ch.MetaRelPath);
             if (!File.Exists(path)) continue;
             var text = MetaText.Read(path);
-            var updated = RemoveItems(text, plan.Model);
+            var updated = ch.KeepBlockIndex >= 0
+                ? RemoveItemsExcept(text, plan.Model, ch.KeepBlockIndex)
+                : RemoveItems(text, plan.Model);
             if (updated != text) File.WriteAllText(path, updated);
         }
     }
@@ -97,6 +147,28 @@ public sealed class DuplicateRemover
         {
             var (s, e) = spans[i];
             // engole espaços/linha em branco em volta
+            int s2 = s; while (s2 > 0 && (text[s2 - 1] == ' ' || text[s2 - 1] == '\t')) s2--;
+            int e2 = e; while (e2 < text.Length && (text[e2] == '\r' || text[e2] == '\n')) e2++;
+            text = text.Remove(s2, e2 - s2);
+        }
+        return text;
+    }
+
+    /// <summary>Remove todas as declarações do modelo no arquivo MENOS a de índice
+    /// <paramref name="keepIndex"/> (duplicata interna no mesmo vehicles.meta).</summary>
+    private static string RemoveItemsExcept(string text, string model, int keepIndex)
+    {
+        var spans = new List<(int start, int end)>();
+        int from = 0;
+        while (TryFindItemSpan(text, model, from, out var start, out var end))
+        {
+            spans.Add((start, end));
+            from = end;
+        }
+        for (int i = spans.Count - 1; i >= 0; i--)
+        {
+            if (i == keepIndex) continue; // mantém esse bloco
+            var (s, e) = spans[i];
             int s2 = s; while (s2 > 0 && (text[s2 - 1] == ' ' || text[s2 - 1] == '\t')) s2--;
             int e2 = e; while (e2 < text.Length && (text[e2] == '\r' || text[e2] == '\n')) e2++;
             text = text.Remove(s2, e2 - s2);

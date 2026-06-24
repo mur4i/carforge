@@ -7,15 +7,22 @@
         <ResourceDictionary>
             <local:DiffBrushConverter x:Key="DiffBrush" />
             <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+            <local:StringToVisibilityConverter x:Key="StrToVis" />
+            <local:VerdictBrushConverter x:Key="VerdictBrush" />
+            <local:VerdictGlyphConverter x:Key="VerdictGlyph" />
+            <local:DiffRowBackgroundConverter x:Key="DiffRowBg" />
+            <local:DiffMarkerConverter x:Key="DiffMarker" />
 
             <SolidColorBrush x:Key="Bg" Color="#1B1B1F" />
             <SolidColorBrush x:Key="Surface" Color="#26262B" />
+            <SolidColorBrush x:Key="SurfaceAlt" Color="#2D2D33" />
             <SolidColorBrush x:Key="Border" Color="#3A3A40" />
             <SolidColorBrush x:Key="Text" Color="#ECECEC" />
             <SolidColorBrush x:Key="TextDim" Color="#9A9AA2" />
             <SolidColorBrush x:Key="Accent" Color="#378ADD" />
             <SolidColorBrush x:Key="Danger" Color="#E24B4A" />
             <SolidColorBrush x:Key="Warn" Color="#EF9F27" />
+            <SolidColorBrush x:Key="Good" Color="#3FB37A" />
 
             <Style TargetType="Button">
                 <Setter Property="Background" Value="{StaticResource Surface}" />
@@ -36,6 +43,13 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Style>
+
+            <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Background" Value="{StaticResource Accent}" />
+                <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="FontWeight" Value="SemiBold" />
             </Style>
 
             <Style TargetType="TextBox">
