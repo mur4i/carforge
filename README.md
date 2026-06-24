@@ -14,8 +14,9 @@ CarForge.Core   → motor puro (parsing de .meta, dedup, colisão, tuning,
                   manifest, split). Zero dependência de UI. Testável.
 CarForge.Cli    → app de console que roda o motor JÁ (sem precisar do WPF).
                   Use hoje pra limpar o pack.
-CarForge.App    → GUI WPF (fase 2): módulos + dedup com 2 previews 3D lado a lado.
-CarForge.Viewer → render 3D de .yft via CodeWalker.Core + HelixToolkit (fase 3).
+CarForge.App    → GUI WPF: módulos + dedup com 2 previews 3D lado a lado, e
+                  render 3D real do .yft via CodeWalker.Core + HelixToolkit.
+third_party/CodeWalker.Core → leitor RSC7 (.yft/.ytd) vendorizado in-tree.
 CarForge.Core.Tests → xUnit.
 ```
 
@@ -27,6 +28,10 @@ sem reescrever lógica, e plugar o viewer 3D depois sem mexer no resto.
 O requisito de **renderizar o `.yft` em 3D** decide a stack. O único parser
 maduro e aberto do formato RSC7 da Rockstar é o **CodeWalker.Core** (C#).
 Fazer isso em web seria reimplementar anos de trabalho. Logo: .NET.
+
+O CodeWalker.Core está **vendorizado** em `third_party/CodeWalker.Core` — não
+precisa baixar nada à parte, a solução compila no clone. Procedência e licença
+em [third_party/CodeWalker.Core/README.md](third_party/CodeWalker.Core/README.md).
 
 ## Build (no Windows)
 
@@ -78,12 +83,12 @@ modkit. O matching é por token exato — renomear `as350` nunca toca `as350pc`
 - [x] CLI funcional (analyze, manifest, split)
 - [x] GUI WPF com abas: Faxina/dedup, Split, Handling, Viewer
 - [x] Viewer 3D: contrato `IVehicleModelLoader` + placeholder pronto
-- [ ] Viewer 3D: render real do `.yft` (HelixToolkit + CodeWalker) — ver VIEWER.md
+- [x] Viewer 3D: render real do `.yft` (HelixToolkit + CodeWalker vendorizado)
 
 ## Limitações conhecidas (honestas)
 
-- O render 3D real do `.yft` é a fase final e precisa do CodeWalker.Core na sua
-  máquina — ver `VIEWER.md`. O resto do app funciona sem ele.
-- O código foi escrito sem compilar no ambiente de origem (sem .NET lá). A lógica
-  do Core foi validada em Python contra o pack real de 14 GB, mas a primeira
-  compilação no Visual Studio pode pedir ajustes pontuais.
+- O CodeWalker.Core está vendorizado (`third_party/`), com licença mista — o
+  copyright de topo do upstream não tem concessão formal explícita. Ver
+  [third_party/CodeWalker.Core/README.md](third_party/CodeWalker.Core/README.md).
+- A lógica do Core foi validada em Python contra o pack real de 14 GB antes de
+  ser portada pra C#.

@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -10,6 +10,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarForge.Core.Tests", "tests\CarForge.Core.Tests\CarForge.Core.Tests.csproj", "{C3333333-3333-3333-3333-333333333333}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarForge.App", "src\CarForge.App\CarForge.App.csproj", "{D4444444-4444-4444-4444-444444444444}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "third_party", "third_party", "{54109E02-46A1-4FFC-8CBD-DDE7EC137652}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeWalker.Core", "third_party\CodeWalker.Core\CodeWalker.Core.csproj", "{A2569988-60EE-4C9E-8340-8C13CA8D3525}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,5 +37,12 @@ Global
 		{D4444444-4444-4444-4444-444444444444}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4444444-4444-4444-4444-444444444444}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4444444-4444-4444-4444-444444444444}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2569988-60EE-4C9E-8340-8C13CA8D3525}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2569988-60EE-4C9E-8340-8C13CA8D3525}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2569988-60EE-4C9E-8340-8C13CA8D3525}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2569988-60EE-4C9E-8340-8C13CA8D3525}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A2569988-60EE-4C9E-8340-8C13CA8D3525} = {54109E02-46A1-4FFC-8CBD-DDE7EC137652}
 	EndGlobalSection
 EndGlobal
